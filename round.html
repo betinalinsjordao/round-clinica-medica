@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Round — Clínica Médica V7</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>ROUND — CLÍNICA MÉDICA</h1>
+      <p class="flow">ANAMNESE → EVOLUÇÃO DE ONTEM → ROUND → EVOLUÇÃO DE HOJE</p>
+    </div>
+    <div class="top-actions">
+      <span id="dayLabel" class="day-label"></span>
+      <button id="newPatientBtn" class="btn primary">+ Adicionar paciente</button>
+      <button id="endDayBtn" class="btn danger ghost">Encerrar dia</button>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <section id="dashboardView" class="view active">
+      <div class="section-heading">
+        <div>
+          <h2>Pacientes do dia</h2>
+          <p><span id="patientCount">0</span>/6 pacientes ativos</p>
+        </div>
+      </div>
+      <div id="patientGrid" class="patient-grid"></div>
+      <div id="emptyState" class="empty-state">
+        <div class="empty-icon">＋</div>
+        <h3>Nenhum paciente adicionado</h3>
+        <p>Adicione apenas quem você está acompanhando hoje.</p>
+        <button class="btn primary" id="emptyAddBtn">Adicionar primeiro paciente</button>
+      </div>
+    </section>
+
+    <section id="patientView" class="view">
+      <div class="patient-toolbar">
+        <button id="backBtn" class="btn ghost">← Voltar</button>
+        <div class="patient-title-wrap">
+          <h2 id="patientTitle">Paciente</h2>
+          <span id="patientBed" class="pill"></span>
+        </div>
+        <div class="toolbar-actions">
+          <button id="saveBtn" class="btn">Salvar</button>
+          <button id="removePatientBtn" class="btn danger ghost">Remover do dia</button>
+        </div>
+      </div>
+
+      <div class="patient-layout">
+        <aside class="sidebar-card">
+          <label>Nome / iniciais
+            <input id="patientName" type="text" placeholder="Ex.: Dona Maria" />
+          </label>
+          <label>Leito
+            <input id="patientBedInput" type="text" placeholder="Ex.: 302" />
+          </label>
+          <label>Diagnóstico atual / problemas
+            <textarea id="problems" rows="4" placeholder="Opcional. Pode deixar vazio se já estiver na evolução anterior."></textarea>
+          </label>
+          <label>ATB / dia
+            <textarea id="antibiotics" rows="3" placeholder="Ex.: Azitromicina D2/4"></textarea>
+          </label>
+          <label>Anamnese / evolução de admissão — memória fixa
+            <textarea id="admissionEvolution" rows="14" placeholder="Cole a anamnese/evolução do primeiro dia. Ela é a fonte principal para admissão, HPP, medicamentos prévios, HDA e história fixa."></textarea>
+          </label>
+          <label>Evolução de ontem — estado mais recente
+            <textarea id="previousEvolution" rows="16" placeholder="Cole a evolução do dia anterior. Ela fornece exames recentes, pareceres, ATB, pendências, exame e contexto clínico atual."></textarea>
+          </label>
+          <div class="stack-actions">
+            <button id="parsePreviousBtn" class="btn full">Analisar admissão + evolução anterior</button>
+            <button id="suggestPendingBtn" class="btn full">Sugerir pendências de ontem</button>
+          </div>
+          <div id="extractedSummary" class="extracted-summary">Cole a admissão e a evolução de ontem. O programa mostra de onde cada grupo de dados será recuperado.</div>
+          <p class="helper">Hierarquia: a admissão guarda a história fixa; a evolução anterior prevalece para fatos recentes; o round de hoje prevalece para tudo que mudou hoje.</p>
+        </aside>
+
+        <div class="round-column">
+          <section class="round-card pending-card">
+            <div class="card-head">
+              <div>
+                <span class="eyebrow">PEND. ONTEM</span>
+                <h3>Pendências para hoje</h3>
+              </div>
+              <button id="addPendingBtn" class="btn small">+ Nova</button>
+            </div>
+            <div id="pendingList" class="pending-list"></div>
+          </section>
+
+          <section class="round-card">
+            <span class="eyebrow">24H</span>
+            <textarea id="last24h" class="big-text" placeholder="Escreva do seu jeito: intercorrências, queixas, dieta, diurese, evacuação, confusão etc."></textarea>
+            <button class="btn small medicalize" data-target="last24h">Sugerir redação médica</button>
+          </section>
+
+          <section class="round-card">
+            <span class="eyebrow">Δ EXAME</span>
+            <textarea id="examDelta" class="big-text" placeholder="Somente o que mudou. Para substituir um sistema do exame anterior, prefira começar a linha com GERAL:, NEURO:, ACV:, AR:, AB: ou MMII:."></textarea>
+            <button class="btn small medicalize" data-target="examDelta">Sugerir redação médica</button>
+          </section>
+
+          <section class="round-card">
+            <span class="eyebrow">SAIU?</span>
+            <textarea id="newResults" class="big-text" placeholder="Resultados novos. Use [LAB], [IMG], [GASO], [CULTURA] ou [PARECER] no início da linha para o programa colocar cada dado no lugar certo."></textarea>
+            <button class="btn small medicalize" data-target="newResults">Sugerir redação médica</button>
+            <p class="helper">No padrão da enfermaria, laboratório não vira um campo separado: [LAB] e [GASO] entram como “CHECO...” na conduta imediata. Imagem, cultura e parecer entram nas respectivas seções.</p>
+          </section>
+
+          <section class="round-card emphasis">
+            <span class="eyebrow">E AGORA?</span>
+            <textarea id="nowPlan" class="big-text xl" placeholder="Condutas imediatas / o que fazer hoje."></textarea>
+            <button class="btn small medicalize" data-target="nowPlan">Sugerir redação médica</button>
+          </section>
+
+          <section class="round-card compact-card">
+            <span class="eyebrow">ALTA / TARDIA</span>
+            <textarea id="latePlan" class="big-text compact" placeholder="Alta, seguimento, investigação ambulatorial, pendências tardias..."></textarea>
+          </section>
+
+          <section class="round-card compact-card">
+            <span class="eyebrow">IMPRESSÃO DE HOJE</span>
+            <textarea id="todayImpression" class="big-text compact" placeholder="Escreva sua avaliação de hoje em linguagem médica. Pode ser objetiva: o programa usa a impressão anterior apenas como contexto e acrescenta sua avaliação atual."></textarea>
+            <button class="btn small medicalize" data-target="todayImpression">Sugerir redação médica</button>
+            <p class="helper">O normalizador é local: corrige termos, organiza por sistemas e sinaliza divergências com a evolução anterior. Revise sempre antes de aceitar.</p>
+          </section>
+
+          <section class="round-card evolution-card">
+            <div class="card-head">
+              <div>
+                <span class="eyebrow">EVOLUÇÃO</span>
+                <h3>Evolução de hoje — padrão da enfermaria</h3>
+              </div>
+              <div class="inline-actions">
+                <button id="generateEvolutionBtn" class="btn primary">Atualizar evolução</button>
+                <button id="copyEvolutionBtn" class="btn">Copiar</button>
+              </div>
+            </div>
+            <div id="generationNotice" class="notice">O programa reconstrói a evolução na ordem da anamnese-modelo da enfermaria, usando os dados-base da evolução anterior e atualizando somente o que você informou hoje. Dados dinâmicos não informados não são inventados.</div>
+            <textarea id="generatedEvolution" class="generated" placeholder="A evolução atualizada aparecerá aqui e continuará totalmente editável."></textarea>
+          </section>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="patientDialog">
+    <form method="dialog" id="patientForm" class="dialog-card">
+      <h3>Novo paciente</h3>
+      <label>Nome / iniciais
+        <input id="dialogName" required placeholder="Ex.: Dona Maria" />
+      </label>
+      <label>Leito
+        <input id="dialogBed" placeholder="Ex.: 302" />
+      </label>
+      <label>Diagnóstico atual / problemas
+        <textarea id="dialogProblems" rows="3" placeholder="Opcional"></textarea>
+      </label>
+      <label>ATB / dia
+        <textarea id="dialogAntibiotics" rows="2" placeholder="Opcional"></textarea>
+      </label>
+      <div class="dialog-actions">
+        <button value="cancel" class="btn ghost">Cancelar</button>
+        <button id="createPatientBtn" value="default" class="btn primary">Criar paciente</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="pendingDialog">
+    <form method="dialog" class="dialog-card">
+      <h3>Nova pendência</h3>
+      <label>O que precisa ser checado hoje?
+        <textarea id="pendingText" rows="3" placeholder="Ex.: Checar TC de crânio"></textarea>
+      </label>
+      <div class="dialog-actions">
+        <button value="cancel" class="btn ghost">Cancelar</button>
+        <button id="confirmPendingBtn" value="default" class="btn primary">Adicionar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="resolveDialog">
+    <form method="dialog" class="dialog-card">
+      <h3>Resolver pendência</h3>
+      <p id="resolvePendingLabel" class="dialog-note"></p>
+      <label>Qual foi o resultado?
+        <textarea id="resolveText" rows="4" placeholder="Ex.: TC sem alterações agudas"></textarea>
+      </label>
+      <div class="dialog-actions">
+        <button value="cancel" class="btn ghost">Cancelar</button>
+        <button id="confirmResolveBtn" value="default" class="btn primary">Marcar como resolvida</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="suggestDialog">
+    <form method="dialog" class="dialog-card wide">
+      <h3>Sugestões de pendências</h3>
+      <p class="dialog-note">Revise e marque apenas o que realmente faz sentido para o round de hoje.</p>
+      <div id="suggestionList" class="suggestion-list"></div>
+      <div class="dialog-actions">
+        <button value="cancel" class="btn ghost">Cancelar</button>
+        <button id="addSuggestionsBtn" value="default" class="btn primary">Adicionar selecionadas</button>
+      </div>
+    </form>
+  </dialog>
+
+
+  <dialog id="medicalDialog">
+    <form method="dialog" class="dialog-card wide">
+      <h3>Sugestão de redação médica</h3>
+      <p class="dialog-note">O normalizador reorganiza o texto no padrão da enfermaria. Ele não cria achados que você não escreveu.</p>
+      <div id="medicalWarnings" class="medical-warnings" hidden></div>
+      <label>Seu texto<textarea id="medicalOriginal" rows="7" readonly></textarea></label>
+      <label>Sugestão<textarea id="medicalSuggestion" rows="7"></textarea></label>
+      <div class="dialog-actions">
+        <button value="cancel" class="btn ghost">Manter meu texto</button>
+        <button id="acceptMedicalBtn" value="default" class="btn primary">Usar sugestão</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>
